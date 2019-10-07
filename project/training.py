@@ -6,8 +6,7 @@ It takes a really long time to train, not worth it.
 import numpy as np
 from layers import Convolution, MaxPooling, ReLU, Reshape, Dense, Softmax,  Dropout, BatchNorm
 from network import Network
-from utils import IncrementalAverage, VectorCrossEntropy, Adam
-from cifar10.cifar_loader import load_cifar10
+from utils import IncrementalAverage, VectorCrossEntropy, Adam, load_cifar10
 
 # Path to the unzipped CIFAR-10 folder
 DATA_PATH = ""

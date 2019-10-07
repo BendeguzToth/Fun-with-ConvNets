@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 
 class VectorCrossEntropy:
@@ -105,3 +106,69 @@ class IncrementalAverage:
         """
         self.counter = 1
         self.sum = 0
+
+
+def load_cifar10(directory, normalize=True):
+    """
+    This function loads the CIFAR10 dataset
+    from the batch files located in the directory.
+    :param directory: Path to the directory where the
+    batch files are located. It will search for the original
+    file names, eg.: data_batch_1 - 5, test_batch.
+    :param normalize: If True, the pixel values are divided by
+    255. (All values are between 0 and 1.) If False, values are
+    0 - 255.
+    :return: Tuple of (training_data,
+    training_labels, test_data, test_labels, label_names).
+    The *_data entries will be numpy arrays with dimensions
+    (number_of_images, depth (r, g, b), height, width), the *_labels
+    will be one-hot column vectors with the correct classes:
+    (number_of_labels, number_of_classes, 1).
+    Label names is a list containing strings. The name that corresponds
+    to each label is the string at that index.
+    """
+    training_data = []
+    training_labels = []
+    for i in range(1, 6):
+        try:
+            d = unpickle(directory + f"/data_batch_{i}")
+        except FileNotFoundError:
+            raise Exception(f"File 'data_batch_{i}' is not found in the specified directory '{directory}'.")
+        training_data.append(d[b"data"])
+        training_labels.append(d[b"labels"])
+    training_data = np.vstack(training_data)
+    training_data = np.reshape(training_data, newshape=(-1, 3, 32, 32))
+    training_labels = np.concatenate(training_labels)
+    training_labels = np.array(list(map(lambda hot: one_hot(10, hot), training_labels)))
+
+    try:
+        test = unpickle(directory + "/test_batch")
+    except FileNotFoundError:
+        raise Exception(f"File 'test_batch' is not found in the specified directory '{directory}'.")
+    test_data = np.reshape(test[b"data"], newshape=(-1, 3, 32, 32))
+    test_labels = np.array(list(map(lambda hot: one_hot(10, hot), test[b"labels"])))
+
+    try:
+        meta = unpickle(directory + "/batches.meta")
+    except FileNotFoundError:
+        raise Exception(f"File 'batches.meta' is not found in the specified directory '{directory}'.")
+    label_names = meta[b"label_names"]
+    label_names = list(map(lambda x: x.decode("utf-8"), label_names))
+
+    if normalize:
+        training_data  = training_data / 255
+        test_data = test_data / 255
+
+    return training_data, training_labels, test_data, test_labels, label_names
+
+
+def unpickle(file):
+    with open(file, 'rb') as fo:
+        data = pickle.load(fo, encoding='bytes')
+    return data
+
+
+def one_hot(size, hot):
+    vec = np.zeros((size,))
+    vec[hot] = 1
+    return vec[..., None]
